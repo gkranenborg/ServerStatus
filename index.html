@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html ng-app="systemApp">
+
+	<head>
+		<title>System Status</title>
+		<link rel="stylesheet" type="text/css" href="system/style/bootstrap.css" />
+		<link rel="stylesheet" href="system/style/systemstyle.css" />
+<!--  	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.8/angular.js"></script> -->
+		<script type="text/javascript" src="system/scripts/angular.min.js"></script>
+		<script src="system/scripts/jquery.min.js"></script>
+<!-- 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.js"></script> -->
+		<script type="text/javascript" src="system/scripts/controller.js"></script>
+		<script type="text/javascript" src="system/scripts/factory.js"></script>
+  	</head>
+	
+	<body>
+	<div ng-controller="SystemCtrl">
+	<nav class="navbar navbar-inverse">
+	  <div class="container-fluid">
+	    <div class="navbar-header">
+	      <a class="navbar-brand">{{customer.customername}} System Status</a>
+	    </div>
+	    <div ng-controller="BOPcordysCtrl" class="collapse navbar-collapse" id="myNavbar">
+	      <ul class="nav navbar-nav">
+	        <li><a target="_blank" ng-href="{{url}}" ng-mousedown="WebGateWay()">WebGateway Performance test</a></li>
+	        <li><a target="_blank" ng-href="{{url}}" ng-mousedown="WebGateWayHealth()">WebGateway Health check</a></li>
+	        <h6 id="timestamp" class="timestampclass">(Information last updated : {{datetime.datetime}})</h6>
+	      </ul>
+    	</div>
+	  </div>
+	</nav>
+	
+<!-- Tables showing the Disk Space and DB information using one controller. -->
+		
+
+		
+<!-- Table showing the Disk Space information with conditional cell formatting. -->
+		<div class="row">
+		<div class="col-md-8">
+			<table>
+				<span>
+					<caption><h4 style="display: inline-block;">Disk Space overview : </h4></caption>
+				</span>
+				<thead>
+					<tr>
+						<th>Drive :</th>
+						<th>Size (Gb.):</th>
+						<th>Used (Gb.):</th>
+						<th>Free (Gb.):</th>
+						<th>Percent free (%):</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="disk in system">
+						<td>{{disk.drive}}</td>
+						<td>{{disk.size}}</td>
+						<td>{{disk.used}}</td>
+						<td>{{disk.free}}</td>
+						<td ng-class="{{getDiskClass(disk.percent)}}">{{disk.percent}}</td>
+					</tr>
+				</tbody>
+			</table>
+			
+<!-- Table showing the DB information. -->
+
+			<table ng-show="database.length>0">
+				<caption><h4>Database overview :</h4></caption>
+				<thead>
+					<tr>
+						<th>Database (file) name :</th>
+						<th>Database size (Gb.):</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="dbase in database">
+						<td>{{dbase.DBname}}</td>
+						<td>{{dbase.DBsize}}</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>	
+<!--  Table showing O.S. Services status -->
+        <div class="col-md-4">
+           <table>
+				<caption><h4>Services overview :</h4></caption>
+				<thead>
+					<tr>
+						<th>Service :</th>
+						<th>Status :</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="osservice in services">
+						<td>{{osservice.service}}</td>
+						<td>{{osservice.status}}</td>
+					</tr>
+				</tbody>
+			</table>
+         </div>
+     </div>
+
+	</div>		
+					
+	<div ng-controller="BOPcordysCtrl" style="vertical-align: top; width: 1350px">
+
+			<div>
+			
+<!-- Drop down box to select the BOP organization for which we want to display the Service Container status. -->			
+			
+				<div ng-show="organizations.length>1" class="textwithscclass">
+					<div id="textwithsc" ng-if="cordyssc.length>0">
+						<div ng-show="selectedItem!='All'">
+							<h5>The Service Containers shown below belong to the <u><b>{{selectedItem}}</b></u> organization.</h5><br\>
+						</div>
+						<div ng-show="selectedItem=='All'">
+							<h5>The Service Containers for <u><b>ALL</b></u> organizations are shown below.</h5><br\>
+						</div>
+					</div>
+					<div id="scdropdown">
+						<h5>
+							Select another organization to show it's Service Containers :
+							<select ng-change="ChangeSoap(selectedItem);" ng-model="selectedItem" ng-options="org.description as org.description for org in displayOrganizations">
+							</select>
+						</h5>
+					</div>
+				</div>
+					
+<!-- Table showing the BOP Service Containers per organization including their status and Startup type. -->					
+			
+				<div id="noboptable" class="boptableclass" ng-show="organizations.length>1">
+					<div id="nosctext" ng-if="cordyssc.length==0">
+					<br><br><br>
+						<h5>There are no Service Containers in the <u><b>{{selectedItem}}</b></u> organization.</h5><br\>
+					</div>
+				</div>
+				<table id="boptable" class="boptableclass" ng-show="cordyssc.length>0">
+					<caption><h4>Cordys BOP Service Container overview :</h4></caption>
+					<thead>
+						<tr>
+							<th id="boptableheader" class="boptableheaderclass">
+								<a href="#" ng-click="orderByField='cn'; reverseSort = !reverseSort">Service Container :
+									<span ng-show="orderByField == 'cn'">
+										<span ng-show="!reverseSort"> ^</span>
+										<span ng-show="reverseSort"> v</span>
+									</span>
+								</a>
+							</th>
+							<th>
+								<a href="#" ng-click="orderByField='orgnamepersc'; reverseSort = !reverseSort">Organization :
+									<span ng-show="orderByField == 'orgnamepersc'">
+										<span ng-show="!reverseSort"> ^</span>
+										<span ng-show="reverseSort"> v</span>
+									</span>
+								</a>
+							</th>
+							<th>
+								<a href="#" ng-click="orderByField='status'; reverseSort = !reverseSort">Status :&nbsp &nbsp
+									<span ng-show="orderByField == 'status'">
+										<span ng-show="!reverseSort"> ^</span>
+										<span ng-show="reverseSort"> v</span>
+									</span>
+								</a>
+							</th>
+							<th>
+								<a href="#" ng-click="orderByField='automaticstart'; reverseSort = !reverseSort">Auto startup :
+									<span ng-show="orderByField == 'automaticstart'">
+										<span ng-show="!reverseSort"> ^</span>
+										<span ng-show="reverseSort"> v</span>
+									</span>
+								</a>
+							</th>
+							<th>
+								<a href="#" ng-click="orderByField='vmemory'; reverseSort = !reverseSort">V. Mem. (Kb.) :
+									<span ng-show="orderByField == 'vmemory'">
+										<span ng-show="!reverseSort"> ^</span>
+										<span ng-show="reverseSort"> v</span>
+									</span>
+								</a>
+							</th>
+							<th>
+								<a href="#" ng-click="orderByField='rmemory'; reverseSort = !reverseSort">Res. Mem. (Kb.) :
+									<span ng-show="orderByField == 'rmemory'">
+										<span ng-show="!reverseSort"> ^</span>
+										<span ng-show="reverseSort"> v</span>
+									</span>
+								</a>
+							</th>
+							<th>
+								<a href="#" ng-click="orderByField='nmemory'; reverseSort = !reverseSort">NOM Mem. (Kb.) :
+									<span ng-show="orderByField == 'nmemory'">
+										<span ng-show="!reverseSort"> ^</span>
+										<span ng-show="reverseSort"> v</span>
+									</span>
+								</a>
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr ng-repeat="container in cordyssc|orderBy:orderByField:reverseSort">
+							<td id="boptablerow" class="boptableheaderclass">{{container.cn}}</td>
+							<td>{{container.orgnamepersc}}</td>
+							<td ng-class="{{getSoapClass(container.status, container.automaticstart)}}">{{container.status}}</td>
+							<td>{{container.automaticstart}}</td>
+							<td>{{container.vmemory}}</td>
+							<td>{{container.rmemory}}</td>
+							<td>{{container.nmemory}}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+	</div>
+		
+</body>
+	
+</html>
